@@ -10,7 +10,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    // إعدادات مشروع Firebase الخاص بك
+    // إعدادات مشروع Firebase
     const firebaseConfig = {
       apiKey: "AIzaSyBW2LZlrYEhNipE2GOW4HzC7gUn0EfCWcM",
       authDomain: "casher-app-e0598.firebaseapp.com",
@@ -24,7 +24,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // ربط الأدوات بالـ window لاستخدامها في باقي السكربت
     window.db = db;
     window.fsDoc = doc;
     window.fsSetDoc = setDoc;
@@ -184,7 +183,7 @@
     try {
       const encodedData = keyString.replace('KEY-', '');
       const decodedData = atob(encodedData);
-      return decodedData.split('|')[0].trim();
+      return decodedData.split('|')[0].trim().toUpperCase();
     } catch (e) {
       return keyString;
     }
@@ -192,39 +191,54 @@
 
   async function checkLicense() {
     const savedKey = localStorage.getItem('app_license_key');
-    if (savedKey && validateKeyData(savedKey)) {
-      currentKey = savedKey;
-      document.getElementById('lock-screen').style.display = 'none';
-      document.getElementById('app-container').style.display = 'block';
-      autoCalculateExpiry();
-      
-      // جلب البيانات من السحاب أولاً
-      await fetchSubscribersFromCloud();
-    } else {
-      document.getElementById('lock-screen').style.display = 'flex';
-      document.getElementById('app-container').style.display = 'none';
+    if (savedKey) {
+      const isValid = await validateKeyData(savedKey);
+      if (isValid) {
+        currentKey = savedKey;
+        document.getElementById('lock-screen').style.display = 'none';
+        document.getElementById('app-container').style.display = 'block';
+        autoCalculateExpiry();
+        await fetchSubscribersFromCloud();
+        return;
+      }
     }
+    document.getElementById('lock-screen').style.display = 'flex';
+    document.getElementById('app-container').style.display = 'none';
   }
 
-  function validateKeyData(keyString) {
+  async function validateKeyData(keyString) {
     try {
-      if (!keyString.startsWith('KEY-')) return false;
+      if (!keyString || !keyString.startsWith('KEY-')) return false;
       const encodedData = keyString.replace('KEY-', '');
       const decodedData = atob(encodedData);
       const parts = decodedData.split('|');
 
-      const agentName = parts[0];
+      const agentName = parts[0].trim().toUpperCase();
       const expiryTimestamp = parseInt(parts[1]);
       const now = new Date().getTime();
 
-      if (now <= expiryTimestamp) {
-        const expiryDate = new Date(expiryTimestamp).toLocaleDateString('ar-EG');
-        document.getElementById('licenseStatus').innerText = `✅ أهلاً بك يا ${agentName} | تفعيل اللوحة مستمر حتى: ${expiryDate}`;
-        return true;
-      } else {
-        document.getElementById('lock-msg').innerText = `⚠️ انتهت صلاحية تفعيل الاشتراك للوكيل (${agentName})! يرجى السداد للتجديد:`;
+      if (now > expiryTimestamp) {
+        document.getElementById('lock-msg').innerText = `⚠️ انتهت صلاحية تفعيل الاشتراك للوكيل (${agentName})! يرجى التجديد:`;
         return false;
       }
+
+      // التحقق السحابي لمنع استخدام المفاتيح الملغاة/القديمة عند التجديد
+      if (window.db && window.fsGetDoc) {
+        const docRef = window.fsDoc(window.db, "agents", agentName);
+        const docSnap = await window.fsGetDoc(docRef);
+        if (docSnap.exists()) {
+          const cloudData = docSnap.data();
+          if (cloudData.latestKey && cloudData.latestKey !== keyString) {
+            document.getElementById('lock-msg').innerText = `⚠️ تم إبطال هذا المفتاح بسبب التجديد! أدخل المفتاح الجديد:`;
+            return false;
+          }
+        }
+      }
+
+      const expiryDate = new Date(expiryTimestamp).toLocaleDateString('ar-EG');
+      document.getElementById('licenseStatus').innerText = `✅ أهلاً بك يا ${agentName} | تفعيل اللوحة مستمر حتى: ${expiryDate}`;
+      return true;
+
     } catch (e) {
       return false;
     }
@@ -232,12 +246,23 @@
 
   async function activateLicense() {
     const inputKey = document.getElementById('licenseKeyInput').value.trim();
-    if (validateKeyData(inputKey)) {
+    const isValid = await validateKeyData(inputKey);
+
+    if (isValid) {
       localStorage.setItem('app_license_key', inputKey);
+      currentKey = inputKey;
+      
+      // حفظ المفتاح الأخير المعتمد بالسحاب لمنع المفاتيح القديمة
+      const agentDocId = getAgentNameFromKey(inputKey);
+      if (window.db && window.fsSetDoc) {
+        const docRef = window.fsDoc(window.db, "agents", agentDocId);
+        await window.fsSetDoc(docRef, { latestKey: inputKey }, { merge: true });
+      }
+
       alert('تم تفعيل النظام بنجاح!');
       await checkLicense();
     } else {
-      alert('مفتاح التفعيل غير صحيح أو منتهي الصلاحية!');
+      alert('مفتاح التفعيل غير صحيح، منتهي، أو تم إبطاله بطلب تجديد جديد!');
     }
   }
 
@@ -248,7 +273,7 @@
     }
   }
 
-  // جلب البيانات من Cloud Firestore باستخدام اسم الوكيل
+  // جلب البيانات من Cloud Firestore
   async function fetchSubscribersFromCloud() {
     const syncStatus = document.getElementById('cloudSyncStatus');
     syncStatus.innerText = 'جاري مزامنة البيانات... ⏳';
@@ -279,7 +304,7 @@
     renderApp();
   }
 
-  // حفظ البيانات سحابياً ومحلياً باستخدام اسم الوكيل
+  // حفظ البيانات سحابياً ومحلياً
   async function saveDataCloud() {
     const syncStatus = document.getElementById('cloudSyncStatus');
     syncStatus.innerText = 'جاري حفظ التغييرات... ⏳';
@@ -294,6 +319,7 @@
         await window.fsSetDoc(docRef, {
           agentName: agentDocId,
           subscribers: subscribers,
+          latestKey: currentKey,
           lastUpdated: new Date().toISOString()
         }, { merge: true });
         syncStatus.innerText = 'تم الحفظ في السحاب ☁️';
