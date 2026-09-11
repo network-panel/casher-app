@@ -10,6 +10,12 @@
     .container { max-width: 1200px; margin: 0 auto; }
     h1 { text-align: center; color: #1a252f; margin-bottom: 20px; }
 
+    /* أزرار النسخ الاحتياطي */
+    .backup-bar { display: flex; gap: 10px; margin-bottom: 20px; justify-content: flex-end; }
+    .btn-backup { padding: 9px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; color: white; display: inline-flex; align-items: center; gap: 5px; }
+    .btn-export { background-color: #2980b9; }
+    .btn-import { background-color: #8e44ad; }
+
     /* بطاقات الإحصائيات */
     .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
     .stat-card { background: white; padding: 18px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; border-right: 5px solid #3498db; }
@@ -19,7 +25,7 @@
     .stat-card h3 { margin: 0 0 8px 0; font-size: 13px; color: #7f8c8d; }
     .stat-card .value { font-size: 22px; font-weight: bold; color: #2c3e50; }
 
-    /* استمارة إدخال البيانات - الكاشير */
+    /* استمارة الكاشير */
     .form-container { background: white; padding: 22px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
     .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
     .form-group { display: flex; flex-direction: column; }
@@ -36,7 +42,7 @@
     th { background-color: #2c3e50; color: white; font-weight: 600; }
     tr:hover { background-color: #f8f9fa; }
 
-    /* شارات الحالة والأزرار */
+    /* الشارات والأزرار */
     .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; }
     .badge-paid { background-color: #d4edda; color: #155724; }
     .badge-part { background-color: #fff3cd; color: #856404; }
@@ -47,7 +53,7 @@
     .btn-wa-warn { background-color: #e67e22; }
     .btn-delete { background-color: #e74c3c; }
 
-    /* شاشة القفل ومفتاح التفعيل */
+    /* شاشة القفل */
     #lock-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 37, 48, 0.96); display: flex; justify-content: center; align-items: center; z-index: 9999; }
     .lock-box { background: white; padding: 30px; border-radius: 12px; text-align: center; width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
     .lock-box input { width: 100%; padding: 11px; margin: 15px 0; border: 1px solid #ccc; border-radius: 6px; text-align: center; font-size: 15px; }
@@ -62,13 +68,21 @@
     <div class="lock-box">
       <h2>🔑 تفعيل نظام الكاشير</h2>
       <p id="lock-msg">أدخل مفتاح الاشتراك التفعيل الخاص بك:</p>
-      <input type="text" id="licenseKeyInput" placeholder="أصق المفتاح هنا (KEY-...)">
+      <input type="text" id="licenseKeyInput" placeholder="أدنسخ المفتاح هنا (KEY-...)">
       <button onclick="activateLicense()">تفعيل اللوحة</button>
     </div>
   </div>
 
   <div class="container" id="app-container" style="display: none;">
     <h1>نظام كاشير وإدارة المشتركين</h1>
+    
+    <!-- شريط أزرار الحفظ والاسترجاع -->
+    <div class="backup-bar">
+      <button class="btn-backup btn-export" onclick="exportData()">💾 تصدير نسخة احتياطية</button>
+      <button class="btn-backup btn-import" onclick="document.getElementById('importFile').click()">📥 استرجاع البيانات</button>
+      <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
+    </div>
+
     <div class="license-info" id="licenseStatus"></div>
 
     <!-- الشريط المالي والإحصائيات -->
@@ -96,7 +110,7 @@
             </select>
           </div>
           <div class="form-group"><label>تاريخ الانتهاء (تلقائي)</label><input type="date" id="endDate" readonly style="background:#f9f9f9;"></div>
-          <div class="form-group"><label>المبلغ الكلي للاشتراك</label><input type="number" id="totalPrice" required value="35000" oninput="calculateFinancials()"></div>
+          <div class="form-group"><label>المبلغ الكلي للااشتراك</label><input type="number" id="totalPrice" required value="35000" oninput="calculateFinancials()"></div>
           <div class="form-group"><label>المبلغ المدفوع</label><input type="number" id="paidAmount" required value="35000" oninput="calculateFinancials()"></div>
           <div class="form-group"><label>المبلغ المتبقي</label><input type="number" id="remainingAmount" readonly style="background:#f9f9f9; color:#e74c3c; font-weight:bold;"></div>
           <button type="submit" class="btn-add">➕ حفظ وحساب الاشتراك</button>
@@ -128,7 +142,6 @@
 <script>
   let subscribers = JSON.parse(localStorage.getItem('agent_subscribers_db')) || [];
 
-  // ضبط التاريخ المبدئي لليوم
   document.getElementById('startDate').valueAsDate = new Date();
 
   function checkLicense() {
@@ -179,7 +192,6 @@
     }
   }
 
-  // حساب تاريخ الانتهاء تلقائياً
   function autoCalculateExpiry() {
     const startVal = document.getElementById('startDate').value;
     const months = parseInt(document.getElementById('duration').value);
@@ -192,7 +204,6 @@
     calculateFinancials();
   }
 
-  // حساب المبالغ المتبقية
   function calculateFinancials() {
     const total = parseFloat(document.getElementById('totalPrice').value) || 0;
     const paid = parseFloat(document.getElementById('paidAmount').value) || 0;
@@ -237,7 +248,6 @@
       const isExpired = s.endDate < today;
       if (isExpired) expiredCount++;
 
-      // إعداد رسائل الواتساب
       const cleanPhone = s.phone.replace(/[^0-9]/g, '');
       const payMsg = encodeURIComponent(`عزيزي المشترك (${s.name})🌸\nتم استلام مبلغ: ${s.paidAmount.toLocaleString()} د.ع\nالمبلغ المتبقي: ${s.remainingAmount.toLocaleString()} د.ع\nتاريخ انتهاء الاشتراك: ${s.endDate}\nشكراً لتواصلك معنا! ✅`);
       const warnMsg = encodeURIComponent(`تنبيه من إدارة الشبكة ⚠️\nعزيزي المشترك (${s.name})، نود إعلامك بأن اشتراكك ينتهي بتاريخ: (${s.endDate}).\nيرجى السداد لتجنب انقطاع الخدمة. 🌸`);
@@ -260,7 +270,6 @@
       tbody.appendChild(tr);
     });
 
-    // تحديث الإحصائيات المالية
     document.getElementById('stat-subscribers').innerText = subscribers.length;
     document.getElementById('stat-expired').innerText = expiredCount;
     document.getElementById('stat-paid').innerText = totalPaid.toLocaleString() + ' د.ع';
@@ -273,6 +282,44 @@
       localStorage.setItem('agent_subscribers_db', JSON.stringify(subscribers));
       renderApp();
     }
+  }
+
+  // وظيفة تصدير النسخة الاحتياطية (تنزيل ملف)
+  function exportData() {
+    if (subscribers.length === 0) return alert('لا توجد بيانات لتصديرها!');
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(subscribers));
+    const downloadAnchor = document.createElement('a');
+    downloadAnchor.setAttribute("href", dataStr);
+    downloadAnchor.setAttribute("download", `نسخة_احتياطية_المشتركين_${new Date().toISOString().split('T')[0]}.json`);
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    downloadAnchor.remove();
+  }
+
+  // وظيفة استرجاع النسخة الاحتياطية من ملف
+  function importData(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const importedSubscribers = JSON.parse(e.target.result);
+        if (Array.isArray(importedSubscribers)) {
+          if (confirm('هل تريد استبدال البيانات الحالية بالبيانات المسترجعة؟')) {
+            subscribers = importedSubscribers;
+            localStorage.setItem('agent_subscribers_db', JSON.stringify(subscribers));
+            renderApp();
+            alert('تم استرجاع البيانات بنجاح! ✅');
+          }
+        } else {
+          alert('ملف غير صالح!');
+        }
+      } catch (err) {
+        alert('حدث خطأ أثناء قراءة الملف!');
+      }
+    };
+    reader.readAsText(file);
   }
 
   checkLicense();
