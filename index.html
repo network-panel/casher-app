@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>نظام إدارة المشتركين والكاشير - لوحة الوكيل</title>
   
+  <!-- أيقونة البرنامج الاحترافية في المتصفح -->
+  <link rel="icon" type="image/png" href="https://img.icons8.com/color/48/cash-register.png">
+
   <!-- Firebase SDK Modules -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -219,7 +222,6 @@
   async function checkLicense() {
     const savedKey = localStorage.getItem('app_license_key');
     if (!savedKey) {
-      // إذا ماكو مفتاح مخزن، نظهر شاشة الإدخال مباشرة
       document.getElementById('lock-screen').style.display = 'flex';
       document.getElementById('app-container').style.display = 'none';
       return;
@@ -233,7 +235,6 @@
       autoCalculateExpiry();
       await fetchSubscribersFromCloud();
     } else {
-      // إذا المفتاح غير صالح (منتهي أو محذوف)، نظهر شاشة القفل يطرد المستخدم
       document.getElementById('lock-screen').style.display = 'flex';
       document.getElementById('app-container').style.display = 'none';
     }
@@ -250,13 +251,11 @@
       const { agentName, expiryTimestamp } = parsed;
       const now = new Date().getTime();
 
-      // 1. التحقق من انتهاء تاريخ الصلاحية
       if (now > expiryTimestamp) {
         document.getElementById('lock-msg').innerText = `⚠️ انتهت صلاحية اشتراك الوكيل (${agentName})!`;
         return false;
       }
 
-      // 2. التحقق من قاعدة البيانات سحابياً (هل تم حذفه أو إنهاؤه أو تغير مفتاحه)
       if (window.db && window.fsGetDoc) {
         const docRef = window.fsDoc(window.db, "agents", agentName);
         const docSnap = await window.fsGetDoc(docRef);
@@ -270,7 +269,6 @@
         const cloudKey = cloudData.latestKey;
         const cloudParsed = parseKey(cloudKey);
 
-        // إذا تم توليد مفتاح جديد (تجديد أو إنهاء)، فالمفتاح الحالي يعتبر معطلاً
         if (cloudKey !== keyString) {
           document.getElementById('lock-msg').innerText = `⚠️ تم تحديث أو إبطال هذا المفتاح!`;
           return false;
@@ -579,7 +577,6 @@
     reader.readAsText(file);
   }
 
-  // فحص سحابي دوري كل 30 ثانية لتأكيد صلاحية المفتاح وحذف الجلسة فوراً إذا تم إيقافه أو حذفه
   setInterval(async () => {
     const savedKey = localStorage.getItem('app_license_key');
     if (savedKey) {
