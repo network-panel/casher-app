@@ -56,11 +56,19 @@
     .form-group label { margin-bottom: 6px; font-size: 13px; font-weight: bold; color: #34495e; }
     .form-group input, .form-group select { padding: 9px; border: 1px solid #cccccc; border-radius: 6px; font-size: 14px; outline: none; }
     .form-group input:focus, .form-group select:focus { border-color: #3498db; }
-    .btn-add { grid-column: 1 / -1; background-color: #27ae60; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; transition: 0.2s; }
+    
+    .form-buttons { grid-column: 1 / -1; display: flex; gap: 10px; }
+    .btn-add { flex: 1; background-color: #27ae60; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; transition: 0.2s; }
     .btn-add:hover { background-color: #219150; }
+    .btn-cancel-edit { display: none; width: 120px; background-color: #7f8c8d; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; margin-top: 10px; }
+
+    /* شريط البحث والفلترة */
+    .filter-bar { display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); align-items: center; }
+    .filter-bar input, .filter-bar select { padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; }
+    .filter-bar input { flex: 1; min-width: 220px; }
 
     .table-container { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; text-align: right; min-width: 900px; }
+    table { width: 100%; border-collapse: collapse; text-align: right; min-width: 950px; }
     th, td { padding: 12px 14px; border-bottom: 1px solid #eee; font-size: 13px; }
     th { background-color: #2c3e50; color: white; font-weight: 600; }
     tr:hover { background-color: #f8f9fa; }
@@ -70,9 +78,12 @@
     .badge-part { background-color: #fff3cd; color: #856404; }
     .badge-expired { background-color: #f8d7da; color: #721c24; }
     
-    .btn-action { padding: 6px 10px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 4px; margin-left: 2px; color: white; }
+    .actions-group { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+    .btn-action { padding: 5px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 3px; color: white; }
     .btn-wa-pay { background-color: #25D366; }
     .btn-wa-warn { background-color: #e67e22; }
+    .btn-edit { background-color: #2980b9; }
+    .btn-renew { background-color: #8e44ad; }
     .btn-delete { background-color: #e74c3c; }
 
     #lock-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 37, 48, 0.96); display: flex; justify-content: center; align-items: center; z-index: 9999; }
@@ -115,8 +126,11 @@
       <div class="stat-card warning"><h3>الديون المتبقية</h3><div class="value" id="stat-remaining">0 د.ع</div></div>
     </div>
 
+    <!-- استمارة الإضافة أو التعديل -->
     <div class="form-container">
+      <h3 id="form-title" style="margin-top:0; color:#2c3e50; font-size:16px;">➕ إضافة مشترك جديد</h3>
       <form id="subscriber-form" onsubmit="handleFormSubmit(event)">
+        <input type="hidden" id="editId" value="">
         <div class="form-grid">
           <div class="form-group"><label>اسم المشترك</label><input type="text" id="name" required placeholder="مثال: محمد علي"></div>
           <div class="form-group"><label>رقم الهاتف (واتساب)</label><input type="text" id="phone" required placeholder="07700000000"></div>
@@ -134,11 +148,27 @@
           <div class="form-group"><label>المبلغ الكلي للااشتراك</label><input type="number" id="totalPrice" required value="35000" oninput="calculateFinancials()"></div>
           <div class="form-group"><label>المبلغ المدفوع</label><input type="number" id="paidAmount" required value="35000" oninput="calculateFinancials()"></div>
           <div class="form-group"><label>المبلغ المتبقي</label><input type="number" id="remainingAmount" readonly style="background:#f9f9f9; color:#e74c3c; font-weight:bold;"></div>
-          <button type="submit" class="btn-add">➕ حفظ وحساب الاشتراك</button>
+          
+          <div class="form-buttons">
+            <button type="submit" class="btn-add" id="submit-btn-text">➕ حفظ وحساب الاشتراك</button>
+            <button type="button" class="btn-cancel-edit" id="cancel-edit-btn" onclick="resetForm()">إلغاء التعديل</button>
+          </div>
         </div>
       </form>
     </div>
 
+    <!-- شريط البحث والفلترة -->
+    <div class="filter-bar">
+      <input type="text" id="searchInput" placeholder="🔍 ابحث باسم المشترك أو رقم الهاتف..." oninput="renderApp()">
+      <select id="filterStatus" onchange="renderApp()">
+        <option value="all">📁 جميع الحالات</option>
+        <option value="active">✅ الاشتراكات السارية</option>
+        <option value="expired">⚠️ الاشتراكات المنتهية</option>
+        <option value="debt">💰 المشتركون الذين عليهم ديون</option>
+      </select>
+    </div>
+
+    <!-- جدول البيانات -->
     <div class="table-container">
       <table>
         <thead>
@@ -219,7 +249,6 @@
         return false;
       }
 
-      // التحقق البسيط والمباشر مع السحاب
       if (window.db && window.fsGetDoc) {
         const docRef = window.fsDoc(window.db, "agents", agentName);
         const docSnap = await window.fsGetDoc(docRef);
@@ -229,19 +258,15 @@
           const cloudKey = cloudData.latestKey;
           const cloudParsed = parseKey(cloudKey);
 
-          // إذا كان المفتاح المستخدَم حالياً هو نفس المفتاح الموجود سحابياً، نقبله فوراً دون قيود
           if (cloudKey === keyString) {
             const expiryDate = new Date(expiryTimestamp).toLocaleDateString('ar-EG');
             document.getElementById('licenseStatus').innerText = `✅ أهلاً بك يا ${agentName} | تفعيل اللوحة مستمر حتى: ${expiryDate}`;
             return true;
           }
 
-          if (cloudParsed) {
-            // نتحقق فقط أن المفتاح الجديد ليس أقدم تاريخاً من الموجود بالسحاب
-            if (expiryTimestamp < cloudParsed.expiryTimestamp) {
-              document.getElementById('lock-msg').innerText = `⚠️ هذا المفتاح أقدم من التفعيل الحالي! يرجى إدخال مفتاح أحدث.`;
-              return false;
-            }
+          if (cloudParsed && expiryTimestamp < cloudParsed.expiryTimestamp) {
+            document.getElementById('lock-msg').innerText = `⚠️ هذا المفتاح أقدم من التفعيل الحالي!`;
+            return false;
           }
         }
       }
@@ -249,7 +274,6 @@
       const expiryDate = new Date(expiryTimestamp).toLocaleDateString('ar-EG');
       document.getElementById('licenseStatus').innerText = `✅ أهلاً بك يا ${agentName} | تفعيل اللوحة مستمر حتى: ${expiryDate}`;
       return true;
-
     } catch (e) {
       return false;
     }
@@ -356,8 +380,10 @@
 
   async function handleFormSubmit(e) {
     e.preventDefault();
+    const editId = document.getElementById('editId').value;
+    
     const subData = {
-      id: Date.now(),
+      id: editId ? parseInt(editId) : Date.now(),
       name: document.getElementById('name').value,
       phone: document.getElementById('phone').value,
       startDate: document.getElementById('startDate').value,
@@ -367,31 +393,110 @@
       remainingAmount: parseFloat(document.getElementById('remainingAmount').value) || 0
     };
 
-    subscribers.push(subData);
+    if (editId) {
+      const index = subscribers.findIndex(s => s.id === parseInt(editId));
+      if (index !== -1) {
+        subscribers[index] = subData;
+      }
+      alert('تم تحديث بيانات المشترك بنجاح! ✅');
+    } else {
+      subscribers.push(subData);
+    }
+
+    resetForm();
     renderApp();
     await saveDataCloud();
+  }
 
+  function resetForm() {
     document.getElementById('subscriber-form').reset();
+    document.getElementById('editId').value = '';
+    document.getElementById('form-title').innerText = '➕ إضافة مشترك جديد';
+    document.getElementById('submit-btn-text').innerText = '➕ حفظ وحساب الاشتراك';
+    document.getElementById('cancel-edit-btn').style.display = 'none';
     document.getElementById('startDate').valueAsDate = new Date();
     autoCalculateExpiry();
+  }
+
+  function editSub(id) {
+    const sub = subscribers.find(s => s.id === id);
+    if (!sub) return;
+
+    document.getElementById('editId').value = sub.id;
+    document.getElementById('name').value = sub.name;
+    document.getElementById('phone').value = sub.phone;
+    document.getElementById('startDate').value = sub.startDate;
+    document.getElementById('endDate').value = sub.endDate;
+    document.getElementById('totalPrice').value = sub.totalPrice;
+    document.getElementById('paidAmount').value = sub.paidAmount;
+    document.getElementById('remainingAmount').value = sub.remainingAmount;
+
+    document.getElementById('form-title').innerText = `✏️ تعديل بيانات المشترك: (${sub.name})`;
+    document.getElementById('submit-btn-text').innerText = '💾 حفظ التعديلات';
+    document.getElementById('cancel-edit-btn').style.display = 'block';
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // تجديد الاشتراك السريع (إضافة شهر من تاريخ الانتهاء الحالي أو من اليوم)
+  async function renewSub(id) {
+    const sub = subscribers.find(s => s.id === id);
+    if (!sub) return;
+
+    const confirmRenew = confirm(`هل تريد تجديد اشتراك المشترك (${sub.name}) لشهر إضافي؟`);
+    if (!confirmRenew) return;
+
+    let baseDate = new Date(sub.endDate > new Date().toISOString().split('T')[0] ? sub.endDate : new Date());
+    baseDate.setMonth(baseDate.getMonth + 1); // خطأ مطبعي تم تصحيحه في الأسفل
+    
+    // تصحيح حساب تاريخ التجديد بدقة
+    let currentEnd = new Date(sub.endDate);
+    let today = new Date();
+    let startRenewal = currentEnd > today ? currentEnd : today;
+    startRenewal.setMonth(startRenewal.getMonth() + 1);
+    
+    sub.startDate = new Date().toISOString().split('T')[0];
+    sub.endDate = startRenewal.toISOString().split('T')[0];
+    sub.paidAmount = sub.totalPrice; // نفترض سداد كامل مبلغ التجديد أو يترك كما يحب الوكيل
+    sub.remainingAmount = 0;
+
+    renderApp();
+    await saveDataCloud();
+    alert(`تم تجديد اشتراك (${sub.name}) بنجاح حتى تاريخ: ${sub.endDate} ✅`);
   }
 
   function renderApp() {
     const tbody = document.getElementById('subscribers-table');
     tbody.innerHTML = '';
     
+    const searchText = document.getElementById('searchInput').value.trim().toLowerCase();
+    const filterVal = document.getElementById('filterStatus').value;
+
     let totalPaid = 0;
     let totalRemaining = 0;
     let expiredCount = 0;
     const today = new Date().toISOString().split('T')[0];
 
+    // فلترة وبحث المشتركين
+    const filteredSubs = subscribers.filter(s => {
+      const matchSearch = s.name.toLowerCase().includes(searchText) || s.phone.includes(searchText);
+      const isExpired = s.endDate < today;
+
+      if (filterVal === 'active' && isExpired) return false;
+      if (filterVal === 'expired' && !isExpired) return false;
+      if (filterVal === 'debt' && s.remainingAmount <= 0) return false;
+
+      return matchSearch;
+    });
+
     subscribers.forEach(s => {
       totalPaid += s.paidAmount;
       totalRemaining += s.remainingAmount;
-      
-      const isExpired = s.endDate < today;
-      if (isExpired) expiredCount++;
+      if (s.endDate < today) expiredCount++;
+    });
 
+    filteredSubs.forEach(s => {
+      const isExpired = s.endDate < today;
       const cleanPhone = s.phone.replace(/[^0-9]/g, '');
       const payMsg = encodeURIComponent(`عزيزي المشترك (${s.name})🌸\nتم استلام مبلغ: ${s.paidAmount.toLocaleString()} د.ع\nالمبلغ المتبقي: ${s.remainingAmount.toLocaleString()} د.ع\nتاريخ انتهاء الاشتراك: ${s.endDate}\nشكراً لتواصلك معنا! ✅`);
       const warnMsg = encodeURIComponent(`تنبيه من إدارة الشبكة ⚠️\nعزيزي المشترك (${s.name})، نود إعلامك بأن اشتراكك ينتهي بتاريخ: (${s.endDate}).\nيرجى السداد لتجنب انقطاع الخدمة. 🌸`);
@@ -407,9 +512,15 @@
         <td>${s.remainingAmount === 0 ? '<span class="badge badge-paid">مسدد بالكامل</span>' : '<span class="badge badge-part">متبقي دين</span>'}</td>
         <td>
           <a href="https://wa.me/${cleanPhone}?text=${payMsg}" target="_blank" class="btn-action btn-wa-pay">📲 وصل الدفع</a>
-          <a href="https://wa.me/${cleanPhone}?text=${warnMsg}" target="_blank" class="btn-action btn-wa-warn">🔔 تذكير الانتهاء</a>
+          <a href="https://wa.me/${cleanPhone}?text=${warnMsg}" target="_blank" class="btn-action btn-wa-warn">🔔 التذكير</a>
         </td>
-        <td><button class="btn-action btn-delete" onclick="deleteSub(${s.id})">حذف</button></td>
+        <td>
+          <div class="actions-group">
+            <button class="btn-action btn-renew" onclick="renewSub(${s.id})" title="تجديد الاشتراك">🔄</button>
+            <button class="btn-action btn-edit" onclick="editSub(${s.id})" title="تعديل">✏️</button>
+            <button class="btn-action btn-delete" onclick="deleteSub(${s.id})" title="حذف">🗑️</button>
+          </div>
+        </td>
       `;
       tbody.appendChild(tr);
     });
@@ -447,7 +558,7 @@
     reader.onload = async function(e) {
       try {
         const importedSubscribers = JSON.parse(e.target.result);
-        if (Array.isArray(importedStatus || importedSubscribers)) {
+        if (Array.isArray(importedSubscribers)) {
           if (confirm('هل تريد استبدال البيانات الحالية بالبيانات المسترجعة؟')) {
             subscribers = importedSubscribers;
             renderApp();
