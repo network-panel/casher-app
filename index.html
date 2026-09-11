@@ -178,21 +178,32 @@
 
   document.getElementById('startDate').valueAsDate = new Date();
 
-  // استخراج اسم الوكيل الموحد من المفتاح
-  function getAgentNameFromKey(keyString) {
+  // استخراج تفاصيل المفتاح
+  function parseKey(keyString) {
     try {
+      if (!keyString || !keyString.startsWith('KEY-')) return null;
       const encodedData = keyString.replace('KEY-', '');
       const decodedData = atob(encodedData);
-      return decodedData.split('|')[0].trim().toUpperCase();
+      const parts = decodedData.split('|');
+      return {
+        agentName: parts[0].trim().toUpperCase(),
+        expiryTimestamp: parseInt(parts[1]) || 0,
+        version: parts[2] ? parseInt(parts[2].replace('v', '')) : 1
+      };
     } catch (e) {
-      return keyString;
+      return null;
     }
+  }
+
+  function getAgentNameFromKey(keyString) {
+    const parsed = parseKey(keyString);
+    return parsed ? parsed.agentName : keyString;
   }
 
   async function checkLicense() {
     const savedKey = localStorage.getItem('app_license_key');
     if (savedKey) {
-      const isValid = await validateKeyData(savedKey);
+      const isValid = await validateKeyData(savedKey, false);
       if (isValid) {
         currentKey = savedKey;
         document.getElementById('lock-screen').style.display = 'none';
@@ -206,31 +217,41 @@
     document.getElementById('app-container').style.display = 'none';
   }
 
-  async function validateKeyData(keyString) {
+  async function validateKeyData(keyString, isNewActivation = false) {
     try {
-      if (!keyString || !keyString.startsWith('KEY-')) return false;
-      const encodedData = keyString.replace('KEY-', '');
-      const decodedData = atob(encodedData);
-      const parts = decodedData.split('|');
+      const parsed = parseKey(keyString);
+      if (!parsed) return false;
 
-      const agentName = parts[0].trim().toUpperCase();
-      const expiryTimestamp = parseInt(parts[1]);
+      const { agentName, expiryTimestamp, version } = parsed;
       const now = new Date().getTime();
 
       if (now > expiryTimestamp) {
-        document.getElementById('lock-msg').innerText = `⚠️ انتهت صلاحية تفعيل الاشتراك للوكيل (${agentName})! يرجى التجديد:`;
+        document.getElementById('lock-msg').innerText = `⚠️ انتهت صلاحية التفعيل للوكيل (${agentName})! يرجى التجديد:`;
         return false;
       }
 
-      // التحقق السحابي لمنع استخدام المفاتيح الملغاة/القديمة عند التجديد
+      // التحقق مع السحاب لحفظ وتحديث أحدث مفتاح
       if (window.db && window.fsGetDoc) {
         const docRef = window.fsDoc(window.db, "agents", agentName);
         const docSnap = await window.fsGetDoc(docRef);
+
         if (docSnap.exists()) {
           const cloudData = docSnap.data();
-          if (cloudData.latestKey && cloudData.latestKey !== keyString) {
-            document.getElementById('lock-msg').innerText = `⚠️ تم إبطال هذا المفتاح بسبب التجديد! أدخل المفتاح الجديد:`;
-            return false;
+          const cloudKey = cloudData.latestKey;
+          const cloudParsed = parseKey(cloudKey);
+
+          if (cloudParsed) {
+            // إذا كان المفتاح المدخل أحدث (تاريخ انتهاء أكبر أو رقم إصدار أعلى)، نعتمده ونحدث السحاب
+            if (expiryTimestamp > cloudParsed.expiryTimestamp || version > cloudParsed.version) {
+              if (window.fsSetDoc) {
+                await window.fsSetDoc(docRef, { latestKey: keyString }, { merge: true });
+              }
+            } 
+            // إذا كان المفتاح المدخل أقوم وأقدم من الموجود بالسحاب، نرفضه
+            else if (expiryTimestamp < cloudParsed.expiryTimestamp || version < cloudParsed.version) {
+              document.getElementById('lock-msg').innerText = `⚠️ تم إبطال هذا المفتاح القديم! يرجى أدخال المفتاح المجدد الجديد:`;
+              return false;
+            }
           }
         }
       }
@@ -246,13 +267,12 @@
 
   async function activateLicense() {
     const inputKey = document.getElementById('licenseKeyInput').value.trim();
-    const isValid = await validateKeyData(inputKey);
+    const isValid = await validateKeyData(inputKey, true);
 
     if (isValid) {
       localStorage.setItem('app_license_key', inputKey);
       currentKey = inputKey;
       
-      // حفظ المفتاح الأخير المعتمد بالسحاب لمنع المفاتيح القديمة
       const agentDocId = getAgentNameFromKey(inputKey);
       if (window.db && window.fsSetDoc) {
         const docRef = window.fsDoc(window.db, "agents", agentDocId);
@@ -262,7 +282,7 @@
       alert('تم تفعيل النظام بنجاح!');
       await checkLicense();
     } else {
-      alert('مفتاح التفعيل غير صحيح، منتهي، أو تم إبطاله بطلب تجديد جديد!');
+      alert('مفتاح التفعيل غير صحيح، منتهي، أو أقدم من المفتاح المفعل حالياً!');
     }
   }
 
