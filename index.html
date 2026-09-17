@@ -3,178 +3,143 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>نظام إدارة المشتركين والكاشير - لوحة الوكيل</title>
-  
-  <!-- أيقونة المتصفح العادية (Favicon) -->
-  <link rel="icon" type="image/png" href="https://img.icons8.com/color/48/cash-register.png">
-
-  <!-- أيقونات الهواتف الذكية عند تثبيت التطبيق على الشاشة الرئيسية -->
-  <link rel="apple-touch-icon" href="https://img.icons8.com/color/192/cash-register.png">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="نظام الكاشير">
-
-  <!-- Firebase SDK Modules -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBW2LZlrYEhNipE2GOW4HzC7gUn0EfCWcM",
-      authDomain: "casher-app-e0598.firebaseapp.com",
-      projectId: "casher-app-e0598",
-      storageBucket: "casher-app-e0598.firebasestorage.app",
-      messagingSenderId: "188952132988",
-      appId: "1:188952132988:web:88e0b5620d5b19514738f9"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    window.db = db;
-    window.fsDoc = doc;
-    window.fsSetDoc = setDoc;
-    window.fsGetDoc = getDoc;
-  </script>
-
+  <title>نظام إدارة اشتراكات الوكلاء المتكامل</title>
   <style>
     * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: #f0f2f5; margin: 0; padding: 20px; direction: rtl; }
-    .container { max-width: 1200px; margin: 0 auto; }
-    h1 { text-align: center; color: #1a252f; margin-bottom: 20px; }
+    body { background-color: #f4f6f9; margin: 0; padding: 20px; direction: rtl; }
+    .container { max-width: 100%; margin: 0 auto; }
+    h1 { text-align: center; color: #333; margin-bottom: 20px; }
+    
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-bottom: 20px; }
+    .stat-card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); text-align: center; }
+    .stat-card h3 { margin: 0 0 10px 0; font-size: 13px; color: #666; }
+    .stat-card .value { font-size: 20px; font-weight: bold; color: #2c3e50; }
+    .stat-card .value-debt { color: #c0392b; }
 
-    .backup-bar { display: flex; gap: 10px; margin-bottom: 20px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-    .sync-status { font-size: 13px; font-weight: bold; padding: 6px 12px; border-radius: 6px; background: #e8f8f5; color: #117a65; border: 1px solid #a3e4d7; }
-    .btn-backup { padding: 9px 15px; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 13px; color: white; display: inline-flex; align-items: center; gap: 5px; }
+    .form-container, .controls-container { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 20px; }
+    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group label { margin-bottom: 5px; font-size: 13px; font-weight: bold; color: #555; }
+    .form-group input, .form-group select { padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px; }
+    .btn-add { grid-column: 1 / -1; background-color: #27ae60; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; }
+    .btn-add:hover { background-color: #219150; }
+
+    /* أدوات البحث والنسخ الاحتياطي */
+    .controls-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: end; }
+    .backup-btns { display: flex; gap: 10px; grid-column: 1 / -1; margin-top: 10px; }
+    .btn-ctrl { padding: 8px 12px; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; color: white; font-size: 13px; }
+    .btn-excel { background-color: #1e7e34; }
     .btn-export { background-color: #2980b9; }
     .btn-import { background-color: #8e44ad; }
-    .btn-logout { background-color: #c0392b; }
-    .btn-logout:hover { background-color: #a93226; }
 
-    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px; }
-    .stat-card { background: white; padding: 18px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); text-align: center; border-right: 5px solid #3498db; }
-    .stat-card.danger { border-right-color: #e74c3c; }
-    .stat-card.success { border-right-color: #2ecc71; }
-    .stat-card.warning { border-right-color: #f1c40f; }
-    .stat-card h3 { margin: 0 0 8px 0; font-size: 13px; color: #7f8c8d; }
-    .stat-card .value { font-size: 22px; font-weight: bold; color: #2c3e50; }
-
-    .form-container { background: white; padding: 22px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 25px; }
-    .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-    .form-group { display: flex; flex-direction: column; }
-    .form-group label { margin-bottom: 6px; font-size: 13px; font-weight: bold; color: #34495e; }
-    .form-group input, .form-group select { padding: 9px; border: 1px solid #cccccc; border-radius: 6px; font-size: 14px; outline: none; }
-    .form-group input:focus, .form-group select:focus { border-color: #3498db; }
-    
-    .form-buttons { grid-column: 1 / -1; display: flex; gap: 10px; }
-    .btn-add { flex: 1; background-color: #27ae60; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; transition: 0.2s; }
-    .btn-add:hover { background-color: #219150; }
-    .btn-cancel-edit { display: none; width: 120px; background-color: #7f8c8d; color: white; border: none; padding: 12px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 14px; margin-top: 10px; }
-
-    .filter-bar { display: flex; gap: 12px; margin-bottom: 15px; flex-wrap: wrap; background: white; padding: 15px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); align-items: center; }
-    .filter-bar input, .filter-bar select { padding: 9px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; outline: none; }
-    .filter-bar input { flex: 1; min-width: 220px; }
-
-    .table-container { background: white; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; text-align: right; min-width: 950px; }
-    th, td { padding: 12px 14px; border-bottom: 1px solid #eee; font-size: 13px; }
-    th { background-color: #2c3e50; color: white; font-weight: 600; }
+    .table-container { background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; text-align: right; }
+    th, td { padding: 12px 15px; border-bottom: 1px solid #ddd; font-size: 14px; white-space: nowrap; }
+    th { background-color: #2c3e50; color: white; }
     tr:hover { background-color: #f8f9fa; }
 
-    .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; display: inline-block; }
-    .badge-paid { background-color: #d4edda; color: #155724; }
-    .badge-part { background-color: #fff3cd; color: #856404; }
+    /* الشارات والحالات */
+    .badge { padding: 5px 10px; border-radius: 12px; font-size: 12px; font-weight: bold; white-space: nowrap; }
+    .badge-active { background-color: #d4edda; color: #155724; }
+    .badge-warning { background-color: #fff3cd; color: #856404; }
     .badge-expired { background-color: #f8d7da; color: #721c24; }
     
-    .actions-group { display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
-    .btn-action { padding: 5px 8px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold; text-decoration: none; display: inline-flex; align-items: center; gap: 3px; color: white; }
-    .btn-wa-pay { background-color: #25D366; }
-    .btn-wa-warn { background-color: #e67e22; }
-    .btn-edit { background-color: #2980b9; }
-    .btn-renew { background-color: #8e44ad; }
-    .btn-delete { background-color: #e74c3c; }
+    .badge-paid { background-color: #d4edda; color: #155724; }
+    .badge-unpaid { background-color: #f8d7da; color: #721c24; }
+    .badge-partial { background-color: #fff3cd; color: #856404; }
 
-    #lock-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(26, 37, 48, 0.96); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-    .lock-box { background: white; padding: 30px; border-radius: 12px; text-align: center; width: 380px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-    .lock-box input { width: 100%; padding: 11px; margin: 15px 0; border: 1px solid #ccc; border-radius: 6px; text-align: center; font-size: 15px; }
-    .lock-box button { width: 100%; padding: 11px; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 15px; }
-    .license-info { background: #e8f8f5; color: #117a65; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; font-weight: bold; border: 1px solid #a3e4d7; }
+    /* أزرار الإجراءات */
+    .actions-cell { display: flex; gap: 5px; align-items: center; }
+    .actions-cell button { 
+      border: none; 
+      padding: 6px 10px; 
+      border-radius: 5px; 
+      cursor: pointer; 
+      font-size: 12px; 
+      font-weight: bold; 
+      color: white; 
+      display: inline-flex; 
+      align-items: center; 
+      gap: 3px;
+      transition: transform 0.1s ease;
+    }
+    .actions-cell button:hover { transform: scale(1.05); }
+    
+    .btn-whatsapp { background-color: #25D366; }
+    .btn-receipt { background-color: #8e44ad; }
+    .btn-setup { background-color: #d35400; }
+    .btn-trial-end { background-color: #c0392b; }
+    .btn-renew { background-color: #3498db; }
+    .btn-edit { background-color: #f39c12; }
+    .btn-delete { background-color: #e74c3c; }
   </style>
 </head>
 <body>
 
-  <!-- شاشة قفل النظام إذا انتهى الكود أو تم حذفه -->
-  <div id="lock-screen" style="display: none;">
-    <div class="lock-box">
-      <h2>🔑 تفعيل نظام الكاشير</h2>
-      <p id="lock-msg">أدخل مفتاح التفعيل الخاص بك:</p>
-      <input type="text" id="licenseKeyInput" placeholder="أدخل أو انسخ المفتاح هنا (KEY-...)">
-      <button onclick="activateLicense()">تفعيل اللوحة</button>
-    </div>
-  </div>
+  <div class="container">
+    <h1>نظام إدارة اشتراكات الوكلاء المتكامل</h1>
 
-  <div class="container" id="app-container" style="display: none;">
-    <h1>نظام كاشير وإدارة المشتركين</h1>
-    
-    <div class="backup-bar">
-      <div class="sync-status" id="cloudSyncStatus">حالة الاتصال: جاري المزامنة... ☁️</div>
-      <div style="display: flex; gap: 8px;">
-        <button class="btn-backup btn-export" onclick="exportData()">💾 تصدير نسخة احتياطية</button>
-        <button class="btn-backup btn-import" onclick="document.getElementById('importFile').click()">📥 استرجاع البيانات</button>
-        <button class="btn-backup btn-logout" onclick="logoutAgent()">🚪 تسجيل خروج</button>
-        <input type="file" id="importFile" accept=".json" style="display: none;" onchange="importData(event)">
-      </div>
-    </div>
-
-    <div class="license-info" id="licenseStatus"></div>
-
+    <!-- الإحصائيات -->
     <div class="stats-grid">
-      <div class="stat-card"><h3>إجمالي المشتركين</h3><div class="value" id="stat-subscribers">0</div></div>
-      <div class="stat-card danger"><h3>منتهية اشتراكاتهم</h3><div class="value" id="stat-expired">0</div></div>
-      <div class="stat-card success"><h3>إجمالي المقبوضات</h3><div class="value" id="stat-paid">0 د.ع</div></div>
-      <div class="stat-card warning"><h3>الديون المتبقية</h3><div class="value" id="stat-remaining">0 د.ع</div></div>
+      <div class="stat-card"><h3>إجمالي الوكلاء</h3><div class="value" id="stat-agents">0</div></div>
+      <div class="stat-card"><h3>إجمالي اليوزرات</h3><div class="value" id="stat-users">0</div></div>
+      <div class="stat-card"><h3>إجمالي المبالغ (د.ع)</h3><div class="value" id="stat-price">0</div></div>
+      <div class="stat-card"><h3>المبالغ المطلوبة (ديون)</h3><div class="value value-debt" id="stat-debt">0</div></div>
+      <div class="stat-card"><h3>الاشتراكات الفعالة</h3><div class="value" id="stat-active">0</div></div>
     </div>
 
-    <!-- استمارة الإضافة أو التعديل -->
+    <!-- نموذج الإضافة والتعديل -->
     <div class="form-container">
-      <h3 id="form-title" style="margin-top:0; color:#2c3e50; font-size:16px;">➕ إضافة مشترك جديد</h3>
-      <form id="subscriber-form" onsubmit="handleFormSubmit(event)">
-        <input type="hidden" id="editId" value="">
+      <form id="agent-form" onsubmit="handleFormSubmit(event)">
+        <input type="hidden" id="edit-index" value="-1">
         <div class="form-grid">
-          <div class="form-group"><label>اسم المشترك</label><input type="text" id="name" required placeholder="مثال: محمد علي"></div>
-          <div class="form-group"><label>رقم الهاتف (واتساب)</label><input type="text" id="phone" required placeholder="07700000000"></div>
-          <div class="form-group"><label>تاريخ بدء الاشتراك</label><input type="date" id="startDate" required onchange="autoCalculateExpiry()"></div>
-          <div class="form-group">
-            <label>مدة الاشتراك</label>
-            <select id="duration" onchange="autoCalculateExpiry()">
-              <option value="1">شهر واحد (30 يوم)</option>
-              <option value="2">شهرين (60 يوم)</option>
-              <option value="3">3 أشهر (90 يوم)</option>
-              <option value="12">سنة كاملة</option>
-            </select>
-          </div>
-          <div class="form-group"><label>تاريخ الانتهاء (تلقائي)</label><input type="date" id="endDate" readonly style="background:#f9f9f9;"></div>
-          <div class="form-group"><label>المبلغ الكلي للااشتراك</label><input type="number" id="totalPrice" required value="35000" oninput="calculateFinancials()"></div>
-          <div class="form-group"><label>المبلغ المدفوع</label><input type="number" id="paidAmount" required value="35000" oninput="calculateFinancials()"></div>
-          <div class="form-group"><label>المبلغ المتبقي</label><input type="number" id="remainingAmount" readonly style="background:#f9f9f9; color:#e74c3c; font-weight:bold;"></div>
-          
-          <div class="form-buttons">
-            <button type="submit" class="btn-add" id="submit-btn-text">➕ حفظ وحساب الاشتراك</button>
-            <button type="button" class="btn-cancel-edit" id="cancel-edit-btn" onclick="resetForm()">إلغاء التعديل</button>
-          </div>
+          <div class="form-group"><label>اسم الوكيل</label><input type="text" id="name" required></div>
+          <div class="form-group"><label>رقم الهاتف (مثال: 9647700000000)</label><input type="text" id="phone" required></div>
+          <div class="form-group"><label>تاريخ الاشتراك</label><input type="date" id="startDate" required></div>
+          <div class="form-group"><label>المدة (بالأشهر)</label><input type="number" id="duration" value="1" min="1" onchange="calculateEndDate()" required></div>
+          <div class="form-group"><label>تاريخ الانتهاء (تلقائي)</label><input type="date" id="endDate" readonly></div>
+          <div class="form-group"><label>سعر الاشتراك (بالدينار)</label><input type="number" id="price" value="0" oninput="calculateRemaining()" required></div>
+          <div class="form-group"><label>المبلغ المدفوع (بالدينار)</label><input type="number" id="paidAmount" value="0" oninput="calculateRemaining()" required></div>
+          <div class="form-group"><label>المبلغ المتبقي (تلقائي)</label><input type="number" id="remainingAmount" value="0" readonly></div>
+          <div class="form-group"><label>عدد اليوزرات</label><input type="number" id="users" value="1" min="1" required></div>
+          <div class="form-group"><label>الملاحظات</label><input type="text" id="notes"></div>
+          <button type="submit" class="btn-add" id="submit-btn">إضافة وكيل</button>
         </div>
       </form>
     </div>
 
-    <!-- شريط البحث والفلترة -->
-    <div class="filter-bar">
-      <input type="text" id="searchInput" placeholder="🔍 ابحث باسم المشترك أو رقم الهاتف..." oninput="renderApp()">
-      <select id="filterStatus" onchange="renderApp()">
-        <option value="all">📁 جميع الحالات</option>
-        <option value="active">✅ الاشتراكات السارية</option>
-        <option value="expired">⚠️ الاشتراكات المنتهية</option>
-        <option value="debt">💰 المشتركون الذين عليهم ديون</option>
-      </select>
+    <!-- أدوات البحث والتصفية والنسخ الاحتياطي -->
+    <div class="controls-container">
+      <div class="controls-grid">
+        <div class="form-group">
+          <label>🔍 بحث باسم الوكيل أو الرقم:</label>
+          <input type="text" id="searchInput" placeholder="اكتب للبحث..." oninput="renderApp()">
+        </div>
+        <div class="form-group">
+          <label>📌 تصفية حسب حالة الاشتراك:</label>
+          <select id="filterStatus" onchange="renderApp()">
+            <option value="ALL">الكل</option>
+            <option value="ACTIVE">فعال فقط</option>
+            <option value="WARNING">على وشك الانتهاء</option>
+            <option value="EXPIRED">منتهي فقط</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>💳 تصفية حسب حالة الدفع:</label>
+          <select id="filterPayment" onchange="renderApp()">
+            <option value="ALL">الكل</option>
+            <option value="PAID">تم الدفع بالكامل</option>
+            <option value="DEBT">آجل / متبقي دين</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="backup-btns">
+        <button class="btn-ctrl btn-excel" onclick="exportToCSV()">📊 تصدير إلى Excel (CSV)</button>
+        <button class="btn-ctrl btn-export" onclick="exportBackup()">📥 تنزيل نسخة احتياطية (JSON)</button>
+        <button class="btn-ctrl btn-import" onclick="document.getElementById('fileInput').click()">📤 استرجاع نسخة احتياطية</button>
+        <input type="file" id="fileInput" style="display:none;" accept=".json" onchange="importBackup(event)">
+      </div>
     </div>
 
     <!-- جدول البيانات -->
@@ -182,419 +147,375 @@
       <table>
         <thead>
           <tr>
-            <th>المشترك</th>
+            <th>اسم الوكيل</th>
             <th>الهاتف</th>
+            <th>تاريخ البدء</th>
+            <th>المدة</th>
             <th>تاريخ الانتهاء</th>
-            <th>المبلغ الكلي</th>
+            <th>السعر</th>
             <th>المدفوع</th>
             <th>المتبقي</th>
-            <th>حالة السداد</th>
-            <th>إرسال إشعارات الواتساب</th>
-            <th>إجراءات</th>
+            <th>اليوزرات</th>
+            <th>اشتراك</th>
+            <th>الدفع</th>
+            <th>ملاحظات</th>
+            <th>الإجراءات</th>
           </tr>
         </thead>
-        <tbody id="subscribers-table"></tbody>
+        <tbody id="agents-table"></tbody>
       </table>
     </div>
   </div>
 
 <script>
-  let subscribers = [];
-  let currentKey = localStorage.getItem('app_license_key') || '';
+  let agents = JSON.parse(localStorage.getItem('agents')) || [];
 
   document.getElementById('startDate').valueAsDate = new Date();
+  calculateEndDate();
 
-  function parseKey(keyString) {
-    try {
-      if (!keyString || !keyString.startsWith('KEY-')) return null;
-      const encodedData = keyString.replace('KEY-', '');
-      const decodedData = atob(encodedData);
-      const parts = decodedData.split('|');
-      return {
-        agentName: parts[0].trim().toUpperCase(),
-        expiryTimestamp: parseInt(parts[1]) || 0,
-        version: parts[2] ? parseInt(parts[2].replace('v', '')) : 1
-      };
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function getAgentNameFromKey(keyString) {
-    const parsed = parseKey(keyString);
-    return parsed ? parsed.agentName : keyString;
-  }
-
-  async function checkLicense() {
-    const savedKey = localStorage.getItem('app_license_key');
-    if (!savedKey) {
-      document.getElementById('lock-screen').style.display = 'flex';
-      document.getElementById('app-container').style.display = 'none';
-      return;
-    }
-
-    const isValid = await validateKeyData(savedKey, false);
-    if (isValid) {
-      currentKey = savedKey;
-      document.getElementById('lock-screen').style.display = 'none';
-      document.getElementById('app-container').style.display = 'block';
-      autoCalculateExpiry();
-      await fetchSubscribersFromCloud();
-    } else {
-      document.getElementById('lock-screen').style.display = 'flex';
-      document.getElementById('app-container').style.display = 'none';
-    }
-  }
-
-  async function validateKeyData(keyString, isNewActivation = false) {
-    try {
-      const parsed = parseKey(keyString);
-      if (!parsed) {
-        document.getElementById('lock-msg').innerText = `⚠️ صيغة المفتاح غير صحيحة!`;
-        return false;
-      }
-
-      const { agentName, expiryTimestamp } = parsed;
-      const now = new Date().getTime();
-
-      if (now > expiryTimestamp) {
-        document.getElementById('lock-msg').innerText = `⚠️ انتهت صلاحية اشتراك الوكيل (${agentName})!`;
-        return false;
-      }
-
-      if (window.db && window.fsGetDoc) {
-        const docRef = window.fsDoc(window.db, "agents", agentName);
-        const docSnap = await window.fsGetDoc(docRef);
-
-        if (!docSnap.exists()) {
-          document.getElementById('lock-msg').innerText = `⚠️ تم حذف هذا الحساب أو إلغاؤه من الإدارة!`;
-          return false;
-        }
-
-        const cloudData = docSnap.data();
-        const cloudKey = cloudData.latestKey;
-        const cloudParsed = parseKey(cloudKey);
-
-        if (cloudKey !== keyString) {
-          document.getElementById('lock-msg').innerText = `⚠️ تم تحديث أو إبطال هذا المفتاح!`;
-          return false;
-        }
-
-        if (cloudParsed && now > cloudParsed.expiryTimestamp) {
-          document.getElementById('lock-msg').innerText = `⚠️ اشتراك هذا الوكيل موقوف أو منتهي!`;
-          return false;
-        }
-      }
-
-      const expiryDate = new Date(expiryTimestamp).toLocaleDateString('ar-EG');
-      document.getElementById('licenseStatus').innerText = `✅ أهلاً بك يا ${agentName} | تفعيل اللوحة مستمر حتى: ${expiryDate}`;
-      return true;
-    } catch (e) {
-      document.getElementById('lock-msg').innerText = `⚠️ حدث خطأ في التحقق من المفتاح!`;
-      return false;
-    }
-  }
-
-  async function activateLicense() {
-    const inputKey = document.getElementById('licenseKeyInput').value.trim();
-    const isValid = await validateKeyData(inputKey, true);
-
-    if (isValid) {
-      localStorage.setItem('app_license_key', inputKey);
-      currentKey = inputKey;
-      
-      const agentDocId = getAgentNameFromKey(inputKey);
-      if (window.db && window.fsSetDoc) {
-        const docRef = window.fsDoc(window.db, "agents", agentDocId);
-        await window.fsSetDoc(docRef, { latestKey: inputKey }, { merge: true });
-      }
-
-      alert('تم تفعيل النظام بنجاح! ✅');
-      await checkLicense();
-    } else {
-      alert('مفتاح التفعيل غير صحيح أو منتهي أو تم إبطاله!');
-    }
-  }
-
-  function logoutAgent() {
-    if (confirm('هل ترغب في تسجيل الخروج من اللوحة؟')) {
-      localStorage.removeItem('app_license_key');
-      location.reload();
-    }
-  }
-
-  async function fetchSubscribersFromCloud() {
-    const syncStatus = document.getElementById('cloudSyncStatus');
-    syncStatus.innerText = 'جاري مزامنة البيانات... ⏳';
-
-    const agentDocId = getAgentNameFromKey(currentKey);
-
-    try {
-      if (window.db && window.fsGetDoc) {
-        const docRef = window.fsDoc(window.db, "agents", agentDocId);
-        const docSnap = await window.fsGetDoc(docRef);
-
-        if (docSnap.exists()) {
-          subscribers = docSnap.data().subscribers || [];
-        } else {
-          subscribers = JSON.parse(localStorage.getItem('agent_subscribers_db_' + agentDocId)) || [];
-          await saveDataCloud();
-        }
-        syncStatus.innerText = 'متصل بالسحاب ☁️ (مُتزامن)';
-      } else {
-        subscribers = JSON.parse(localStorage.getItem('agent_subscribers_db_' + agentDocId)) || [];
-        syncStatus.innerText = 'تخزين محلي ⚠️';
-      }
-    } catch (err) {
-      subscribers = JSON.parse(localStorage.getItem('agent_subscribers_db_' + agentDocId)) || [];
-      syncStatus.innerText = 'تخزين محلي ⚠️';
-    }
-    renderApp();
-  }
-
-  async function saveDataCloud() {
-    const syncStatus = document.getElementById('cloudSyncStatus');
-    syncStatus.innerText = 'جاري حفظ التغييرات... ⏳';
-
-    const agentDocId = getAgentNameFromKey(currentKey);
-    localStorage.setItem('agent_subscribers_db_' + agentDocId, JSON.stringify(subscribers));
-
-    try {
-      if (window.db && window.fsSetDoc) {
-        const docRef = window.fsDoc(window.db, "agents", agentDocId);
-        await window.fsSetDoc(docRef, {
-          agentName: agentDocId,
-          subscribers: subscribers,
-          latestKey: currentKey,
-          lastUpdated: new Date().toISOString()
-        }, { merge: true });
-        syncStatus.innerText = 'تم الحفظ في السحاب ☁️';
-      }
-    } catch (e) {
-      syncStatus.innerText = 'فشل الحفظ السحابي (محفوظ محلياً)';
-    }
-  }
-
-  function autoCalculateExpiry() {
+  function calculateEndDate() {
     const startVal = document.getElementById('startDate').value;
-    const months = parseInt(document.getElementById('duration').value);
-
+    const duration = parseInt(document.getElementById('duration').value) || 1;
     if (startVal) {
-      const startDate = new Date(startVal);
-      startDate.setMonth(startDate.getMonth() + months);
-      document.getElementById('endDate').value = startDate.toISOString().split('T')[0];
+      const start = new Date(startVal);
+      start.setMonth(start.getMonth() + duration);
+      document.getElementById('endDate').value = start.toISOString().split('T')[0];
     }
-    calculateFinancials();
   }
 
-  function calculateFinancials() {
-    const total = parseFloat(document.getElementById('totalPrice').value) || 0;
+  function calculateRemaining() {
+    const price = parseFloat(document.getElementById('price').value) || 0;
     const paid = parseFloat(document.getElementById('paidAmount').value) || 0;
-    const remaining = total - paid;
-    document.getElementById('remainingAmount').value = remaining >= 0 ? remaining : 0;
+    document.getElementById('remainingAmount').value = Math.max(0, price - paid);
   }
 
-  async function handleFormSubmit(e) {
+  document.getElementById('startDate').addEventListener('change', calculateEndDate);
+
+  function handleFormSubmit(e) {
     e.preventDefault();
-    const editId = document.getElementById('editId').value;
-    
-    const subData = {
-      id: editId ? parseInt(editId) : Date.now(),
+    const editIndex = parseInt(document.getElementById('edit-index').value);
+    const price = parseFloat(document.getElementById('price').value) || 0;
+    const paid = parseFloat(document.getElementById('paidAmount').value) || 0;
+
+    const agentData = {
+      id: editIndex >= 0 ? agents[editIndex].id : Date.now(),
       name: document.getElementById('name').value,
       phone: document.getElementById('phone').value,
       startDate: document.getElementById('startDate').value,
+      duration: parseInt(document.getElementById('duration').value),
       endDate: document.getElementById('endDate').value,
-      totalPrice: parseFloat(document.getElementById('totalPrice').value) || 0,
-      paidAmount: parseFloat(document.getElementById('paidAmount').value) || 0,
-      remainingAmount: parseFloat(document.getElementById('remainingAmount').value) || 0
+      price: price,
+      paidAmount: paid,
+      remainingAmount: Math.max(0, price - paid),
+      users: parseInt(document.getElementById('users').value) || 1,
+      notes: document.getElementById('notes').value
     };
 
-    if (editId) {
-      const index = subscribers.findIndex(s => s.id === parseInt(editId));
-      if (index !== -1) {
-        subscribers[index] = subData;
-      }
-      alert('تم تحديث بيانات المشترك بنجاح! ✅');
+    if (editIndex >= 0) {
+      agents[editIndex] = agentData;
+      document.getElementById('edit-index').value = "-1";
+      document.getElementById('submit-btn').innerText = "إضافة وكيل";
     } else {
-      subscribers.push(subData);
+      agents.push(agentData);
     }
 
-    resetForm();
-    renderApp();
-    await saveDataCloud();
-  }
-
-  function resetForm() {
-    document.getElementById('subscriber-form').reset();
-    document.getElementById('editId').value = '';
-    document.getElementById('form-title').innerText = '➕ إضافة مشترك جديد';
-    document.getElementById('submit-btn-text').innerText = '➕ حفظ وحساب الاشتراك';
-    document.getElementById('cancel-edit-btn').style.display = 'none';
+    saveAndRender();
+    document.getElementById('agent-form').reset();
     document.getElementById('startDate').valueAsDate = new Date();
-    autoCalculateExpiry();
+    calculateEndDate();
+    calculateRemaining();
   }
 
-  function editSub(id) {
-    const sub = subscribers.find(s => s.id === id);
-    if (!sub) return;
-
-    document.getElementById('editId').value = sub.id;
-    document.getElementById('name').value = sub.name;
-    document.getElementById('phone').value = sub.phone;
-    document.getElementById('startDate').value = sub.startDate;
-    document.getElementById('endDate').value = sub.endDate;
-    document.getElementById('totalPrice').value = sub.totalPrice;
-    document.getElementById('paidAmount').value = sub.paidAmount;
-    document.getElementById('remainingAmount').value = sub.remainingAmount;
-
-    document.getElementById('form-title').innerText = `✏️ تعديل بيانات المشترك: (${sub.name})`;
-    document.getElementById('submit-btn-text').innerText = '💾 حفظ التعديلات';
-    document.getElementById('cancel-edit-btn').style.display = 'block';
-
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-
-  async function renewSub(id) {
-    const sub = subscribers.find(s => s.id === id);
-    if (!sub) return;
-
-    const confirmRenew = confirm(`هل تريد تجديد اشتراك المشترك (${sub.name}) لشهر إضافي؟`);
-    if (!confirmRenew) return;
-
-    let currentEnd = new Date(sub.endDate);
-    let today = new Date();
-    let startRenewal = currentEnd > today ? currentEnd : today;
-    startRenewal.setMonth(startRenewal.getMonth() + 1);
-    
-    sub.startDate = new Date().toISOString().split('T')[0];
-    sub.endDate = startRenewal.toISOString().split('T')[0];
-    sub.paidAmount = sub.totalPrice;
-    sub.remainingAmount = 0;
-
+  function saveAndRender() {
+    localStorage.setItem('agents', JSON.stringify(agents));
     renderApp();
-    await saveDataCloud();
-    alert(`تم تجديد اشتراك (${sub.name}) بنجاح حتى تاريخ: ${sub.endDate} ✅`);
+  }
+
+  function deleteAgent(id) {
+    if (confirm('هل أنت تأكد من حذف هذا الوكيل؟')) {
+      agents = agents.filter(a => a.id !== id);
+      saveAndRender();
+    }
+  }
+
+  function editAgent(id) {
+    const index = agents.findIndex(a => a.id === id);
+    if (index >= 0) {
+      const a = agents[index];
+      document.getElementById('name').value = a.name;
+      document.getElementById('phone').value = a.phone;
+      document.getElementById('startDate').value = a.startDate;
+      document.getElementById('duration').value = a.duration;
+      document.getElementById('endDate').value = a.endDate;
+      document.getElementById('price').value = a.price;
+      document.getElementById('paidAmount').value = a.paidAmount !== undefined ? a.paidAmount : a.price;
+      document.getElementById('remainingAmount').value = a.remainingAmount !== undefined ? a.remainingAmount : 0;
+      document.getElementById('users').value = a.users;
+      document.getElementById('notes').value = a.notes;
+
+      document.getElementById('edit-index').value = index;
+      document.getElementById('submit-btn').innerText = "تحديث بيانات الوكيل";
+    }
+  }
+
+  function renewAgent(id) {
+    const index = agents.findIndex(a => a.id === id);
+    if (index >= 0) {
+      const today = new Date();
+      const currentEnd = new Date(agents[index].endDate);
+      const baseDate = currentEnd > today ? currentEnd : today;
+      
+      baseDate.setMonth(baseDate.getMonth() + (agents[index].duration || 1));
+      
+      agents[index].startDate = today.toISOString().split('T')[0];
+      agents[index].endDate = baseDate.toISOString().split('T')[0];
+      
+      // إعادة ضبط مبالغ الدفع للتجديد جديد
+      agents[index].paidAmount = agents[index].price;
+      agents[index].remainingAmount = 0;
+
+      saveAndRender();
+      alert('تم تجديد اشتراك الوكيل بنجاح!');
+    }
+  }
+
+  // رسائل الواتساب
+  function sendWhatsApp(id) {
+    const a = agents.find(agent => agent.id === id);
+    if (a) {
+      const cleanPhone = a.phone.replace(/[^0-9]/g, '');
+      const msg = 
+`السلام عليكم ورحمة الله وبركاته
+عزيزنا الوكيل: *${a.name}*
+
+نود تذكيركم بتفاصيل حسابكم واشتراككم الحالي:
+
+🔹 *عدد اليوزرات:* ${a.users}
+📅 *تاريخ نهاية الاشتراك:* ${a.endDate}
+💰 *مبلغ التجديد المطلوب:* ${a.price.toLocaleString()} دينار عراقي
+${a.remainingAmount > 0 ? `⚠️ *المبلغ المتبقي السابق:* ${a.remainingAmount.toLocaleString()} دينار عراقي` : ''}
+
+يرجى التسديد وشكراً 💫`;
+
+      window.open(`https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`, '_blank');
+    }
+  }
+
+  function sendReceiptWhatsApp(id) {
+    const a = agents.find(agent => agent.id === id);
+    if (a) {
+      const cleanPhone = a.phone.replace(/[^0-9]/g, '');
+      const msg = 
+`السلام عليكم ورحمة الله وبركاته
+عزيزنا الوكيل: *${a.name}*
+
+تم استلام المبلغ بنجاح، وتجديد اشتراككم بالكامل ✅
+
+📄 *تفاصيل التجديد:*
+💰 *المبلغ الواصل:* ${a.paidAmount.toLocaleString()} دينار عراقي
+${a.remainingAmount > 0 ? `⚠️ *المبلغ المتبقي:* ${a.remainingAmount.toLocaleString()} دينار عراقي` : ''}
+🔹 *عدد اليوزرات:* ${a.users}
+📅 *تاريخ الانتهاء القادم:* ${a.endDate}
+
+تمنياتنا لك بعمل موفق، والخدمة مستمرة بكل كفاءة 🚀`;
+
+      window.open(`https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`, '_blank');
+    }
+  }
+
+  function sendSetupReceiptWhatsApp(id) {
+    const a = agents.find(agent => agent.id === id);
+    if (a) {
+      const cleanPhone = a.phone.replace(/[^0-9]/g, '');
+      const msg = 
+`السلام عليكم ورحمة الله وبركاته
+عزيزنا الوكيل: *${a.name}*
+
+تم استلام مبلغ البرمجة بنجاح ✅
+
+💻 *تفاصيل الخدمة والبرمجة:*
+💰 *المبلغ الواصل:* ${a.paidAmount.toLocaleString()} دينار عراقي
+🎁 *الهدايا والخدمات المرفقة:* نظام SAS + متابعة الدعم الفني مجاناً لمدة شهر
+📅 *تاريخ انتهاء المتابعة والساس المجاني:* ${a.endDate}
+
+شكراً لثقتكم بنا، ونتمنى لكم التوفيق والنجاح 🚀`;
+
+      window.open(`https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`, '_blank');
+    }
+  }
+
+  function sendTrialEndWhatsApp(id) {
+    const a = agents.find(agent => agent.id === id);
+    if (a) {
+      const cleanPhone = a.phone.replace(/[^0-9]/g, '');
+      const totalPrice = a.users * 1000;
+      const msg = 
+`السلام عليكم ورحمة الله وبركاته
+عزيزنا الوكيل: *${a.name}*
+
+نحيطكم علماً بأن شهر المتابعة ونظام SAS المجاني قد انتهى ⏳
+
+💡 *تفاصيل التجديد والشهر الجديد:*
+🔹 *عدد اليوزرات لديك:* ${a.users}
+🏷️ *سعر التجديد:* 1,000 دينار عراقي لكل يوزر (يشمل نظام SAS + المتابعة والدعم الفني)
+💰 *المبلغ الكلي المطلوب للتجديد:* ${totalPrice.toLocaleString()} دينار عراقي
+
+في حال رغبتكم بالتجديد والاستمرار بالخدمة، يرجى التسديد لتفادي توقف النظام. تحياتنا لكم 🚀`;
+
+      window.open(`https://web.whatsapp.com/send?phone=${cleanPhone}&text=${encodeURIComponent(msg)}`, '_blank');
+    }
+  }
+
+  function getStatus(endDateStr) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const end = new Date(endDateStr);
+    end.setHours(0, 0, 0, 0);
+
+    const diffDays = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+
+    if (diffDays < 0) return { label: 'منتهي', class: 'badge-expired', code: 'EXPIRED' };
+    if (diffDays <= 3) return { label: 'على وشك الانتهاء', class: 'badge-warning', code: 'WARNING' };
+    return { label: 'فعال', class: 'badge-active', code: 'ACTIVE' };
+  }
+
+  function getPaymentStatus(price, remaining) {
+    if (remaining <= 0) return { label: 'مدفوع بالكامل', class: 'badge-paid', code: 'PAID' };
+    if (remaining < price) return { label: 'مدفوع جزئياً', class: 'badge-partial', code: 'DEBT' };
+    return { label: 'غير مدفوع (آجل)', class: 'badge-unpaid', code: 'DEBT' };
   }
 
   function renderApp() {
-    const tbody = document.getElementById('subscribers-table');
+    const tbody = document.getElementById('agents-table');
     tbody.innerHTML = '';
-    
-    const searchText = document.getElementById('searchInput').value.trim().toLowerCase();
-    const filterVal = document.getElementById('filterStatus').value;
 
-    let totalPaid = 0;
-    let totalRemaining = 0;
-    let expiredCount = 0;
-    const today = new Date().toISOString().split('T')[0];
+    const searchValue = document.getElementById('searchInput').value.toLowerCase();
+    const filterStatus = document.getElementById('filterStatus').value;
+    const filterPayment = document.getElementById('filterPayment').value;
 
-    const filteredSubs = subscribers.filter(s => {
-      const matchSearch = s.name.toLowerCase().includes(searchText) || s.phone.includes(searchText);
-      const isExpired = s.endDate < today;
+    let totalUsers = 0;
+    let totalPrice = 0;
+    let totalDebt = 0;
+    let activeCount = 0;
 
-      if (filterVal === 'active' && isExpired) return false;
-      if (filterVal === 'expired' && !isExpired) return false;
-      if (filterVal === 'debt' && s.remainingAmount <= 0) return false;
+    agents.forEach(agent => {
+      // حسابات الإحصائيات الشاملة
+      totalUsers += agent.users;
+      totalPrice += agent.price;
+      const remaining = agent.remainingAmount !== undefined ? agent.remainingAmount : (agent.price - (agent.paidAmount || 0));
+      totalDebt += remaining;
 
-      return matchSearch;
+      const status = getStatus(agent.endDate);
+      const payStatus = getPaymentStatus(agent.price, remaining);
+
+      if (status.code === 'ACTIVE' || status.code === 'WARNING') activeCount++;
+
+      // فلترة العرض
+      const matchesSearch = agent.name.toLowerCase().includes(searchValue) || agent.phone.includes(searchValue);
+      const matchesStatus = filterStatus === 'ALL' || status.code === filterStatus;
+      const matchesPayment = filterPayment === 'ALL' || payStatus.code === filterPayment;
+
+      if (matchesSearch && matchesStatus && matchesPayment) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${agent.name}</td>
+          <td>${agent.phone}</td>
+          <td>${agent.startDate}</td>
+          <td>${agent.duration} شهر</td>
+          <td>${agent.endDate}</td>
+          <td>${agent.price.toLocaleString()}</td>
+          <td>${(agent.paidAmount || 0).toLocaleString()}</td>
+          <td style="color:${remaining > 0 ? '#c0392b' : '#27ae60'}; font-weight:bold;">${remaining.toLocaleString()}</td>
+          <td>${agent.users}</td>
+          <td><span class="badge ${status.class}">${status.label}</span></td>
+          <td><span class="badge ${payStatus.class}">${payStatus.label}</span></td>
+          <td>${agent.notes || '-'}</td>
+          <td>
+            <div class="actions-cell">
+              <button class="btn-whatsapp" title="تذكير بالتسديد" onclick="sendWhatsApp(${agent.id})">💬 تذكير</button>
+              <button class="btn-receipt" title="وصل تجديد اشتراك" onclick="sendReceiptWhatsApp(${agent.id})">🧾 تجديد</button>
+              <button class="btn-setup" title="وصل مبلغ البرمجة" onclick="sendSetupReceiptWhatsApp(${agent.id})">💻 برمجة</button>
+              <button class="btn-trial-end" title="تبليغ انتهاء الفترة المجانية" onclick="sendTrialEndWhatsApp(${agent.id})">🔔 انتهاء المجاني</button>
+              <button class="btn-renew" onclick="renewAgent(${agent.id})">🔄 تجديد</button>
+              <button class="btn-edit" onclick="editAgent(${agent.id})">✏️ تعديل</button>
+              <button class="btn-delete" onclick="deleteAgent(${agent.id})">🗑️ حذف</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      }
     });
 
-    subscribers.forEach(s => {
-      totalPaid += s.paidAmount;
-      totalRemaining += s.remainingAmount;
-      if (s.endDate < today) expiredCount++;
-    });
-
-    filteredSubs.forEach(s => {
-      const isExpired = s.endDate < today;
-      const cleanPhone = s.phone.replace(/[^0-9]/g, '');
-      const payMsg = encodeURIComponent(`عزيزي المشترك (${s.name})🌸\nتم استلام مبلغ: ${s.paidAmount.toLocaleString()} د.ع\nالمبلغ المتبقي: ${s.remainingAmount.toLocaleString()} د.ع\nتاريخ انتهاء الاشتراك: ${s.endDate}\nشكراً لتواصلك معنا! ✅`);
-      const warnMsg = encodeURIComponent(`تنبيه من إدارة الشبكة ⚠️\nعزيزي المشترك (${s.name})، نود إعلامك بأن اشتراكك ينتهي بتاريخ: (${s.endDate}).\nيرجى السداد لتجنب انقطاع الخدمة. 🌸`);
-
-      const tr = document.createElement('tr');
-      tr.innerHTML = `
-        <td><strong>${s.name}</strong></td>
-        <td>${s.phone}</td>
-        <td>${s.endDate} ${isExpired ? '<span class="badge badge-expired">منتهي</span>' : ''}</td>
-        <td>${s.totalPrice.toLocaleString()}</td>
-        <td>${s.paidAmount.toLocaleString()}</td>
-        <td style="color:${s.remainingAmount > 0 ? '#e74c3c' : '#27ae60'}; font-weight:bold;">${s.remainingAmount.toLocaleString()}</td>
-        <td>${s.remainingAmount === 0 ? '<span class="badge badge-paid">مسدد بالكامل</span>' : '<span class="badge badge-part">متبقي دين</span>'}</td>
-        <td>
-          <a href="https://wa.me/${cleanPhone}?text=${payMsg}" target="_blank" class="btn-action btn-wa-pay">📲 وصل الدفع</a>
-          <a href="https://wa.me/${cleanPhone}?text=${warnMsg}" target="_blank" class="btn-action btn-wa-warn">🔔 التذكير</a>
-        </td>
-        <td>
-          <div class="actions-group">
-            <button class="btn-action btn-renew" onclick="renewSub(${s.id})" title="تجديد الاشتراك">🔄</button>
-            <button class="btn-action btn-edit" onclick="editSub(${s.id})" title="تعديل">✏️</button>
-            <button class="btn-action btn-delete" onclick="deleteSub(${s.id})" title="حذف">🗑️</button>
-          </div>
-        </td>
-      `;
-      tbody.appendChild(tr);
-    });
-
-    document.getElementById('stat-subscribers').innerText = subscribers.length;
-    document.getElementById('stat-expired').innerText = expiredCount;
-    document.getElementById('stat-paid').innerText = totalPaid.toLocaleString() + ' د.ع';
-    document.getElementById('stat-remaining').innerText = totalRemaining.toLocaleString() + ' د.ع';
+    document.getElementById('stat-agents').innerText = agents.length;
+    document.getElementById('stat-users').innerText = totalUsers;
+    document.getElementById('stat-price').innerText = totalPrice.toLocaleString() + ' د.ع';
+    document.getElementById('stat-debt').innerText = totalDebt.toLocaleString() + ' د.ع';
+    document.getElementById('stat-active').innerText = activeCount;
   }
 
-  async function deleteSub(id) {
-    if (confirm('هل أنت تأكد من حذف هذا المشترك؟')) {
-      subscribers = subscribers.filter(s => s.id !== id);
-      renderApp();
-      await saveDataCloud();
-    }
+  // تصدير إلى Excel CSV
+  function exportToCSV() {
+    if (agents.length === 0) return alert('لا توجد بيانات للتصدير!');
+    let csv = '\uFEFF';
+    csv += 'اسم الوكيل,رقم الهاتف,تاريخ البدء,المدة (أشهر),تاريخ الانتهاء,السعر,المدفوع,المتبقي,عدد اليوزرات,الملاحظات\n';
+
+    agents.forEach(a => {
+      const rem = a.remainingAmount !== undefined ? a.remainingAmount : (a.price - (a.paidAmount || 0));
+      csv += `"${a.name}","${a.phone}","${a.startDate}","${a.duration}","${a.endDate}","${a.price}","${a.paidAmount || 0}","${rem}","${a.users}","${a.notes || ''}"\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `اشتراكات_الوكلاء_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
   }
 
-  function exportData() {
-    if (subscribers.length === 0) return alert('لا توجد بيانات لتصديرها!');
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(subscribers));
+  // تصدير النسخة الاحتياطية JSON
+  function exportBackup() {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(agents, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute("href", dataStr);
-    downloadAnchor.setAttribute("download", `نسخة_احتياطية_المشتركين_${new Date().toISOString().split('T')[0]}.json`);
+    downloadAnchor.setAttribute("download", `نسخة_احتياطية_الوكلاء_${new Date().toISOString().split('T')[0]}.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
   }
 
-  function importData(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
+  // استرجاع النسخة الاحتياطية JSON
+  function importBackup(event) {
     const reader = new FileReader();
-    reader.onload = async function(e) {
+    reader.onload = function(e) {
       try {
-        const importedSubscribers = JSON.parse(e.target.result);
-        if (Array.isArray(importedSubscribers)) {
-          if (confirm('هل تريد استبدال البيانات الحالية بالبيانات المسترجعة؟')) {
-            subscribers = importedSubscribers;
-            renderApp();
-            await saveDataCloud();
-            alert('تم استرجاع البيانات بنجاح وحفظها سحابياً! ✅');
+        const importedData = JSON.parse(e.target.result);
+        if (Array.isArray(importedData)) {
+          if (confirm('هل أنت تأكد من استرجاع البيانات؟ سيتم دمج أو استبدال القائمة الحالية.')) {
+            agents = importedData;
+            saveAndRender();
+            alert('تم استرجاع النسخة الاحتياطية بنجاح!');
           }
+        } else {
+          alert('ملف النسخة الاحتياطية غير صالح!');
         }
       } catch (err) {
         alert('حدث خطأ أثناء قراءة الملف!');
       }
     };
-    reader.readAsText(file);
+    reader.readAsText(event.target.files[0]);
   }
+</script>
 
-  setInterval(async () => {
-    const savedKey = localStorage.getItem('app_license_key');
-    if (savedKey) {
-      const isValid = await validateKeyData(savedKey, false);
-      if (!isValid) {
-        localStorage.removeItem('app_license_key');
-        location.reload();
-      }
-    }
-  }, 30000);
+<script>
+  const password = "1234aa";
+  const userInput = prompt("الرجاء إدخال رمز الدخول للتطبيق:");
 
-  window.addEventListener('DOMContentLoaded', checkLicense);
+  if (userInput === password) {
+    renderApp();
+  } else {
+    alert("رمز الدخول غير صحيح!");
+    document.body.innerHTML = "<h2 style='text-align:center; margin-top:50px; color:red;'>عفواً، لا يمكنك الوصول للتطبيق بدون رمز الدخول.</h2>";
+  }
 </script>
 </body>
 </html>
